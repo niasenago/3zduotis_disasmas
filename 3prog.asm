@@ -7,7 +7,7 @@
 	outFilehandle  dw       	    0
 
 	errMsg 	    db "Nepavyko atidaryti failo. $"
- 	msg         db "35 all good!$"
+ 	msg         db "36 all good!$"
 	smth		db "something $"
 
  	buff        db 255, ?, 			255 dup (?) 
@@ -15,6 +15,12 @@
    	hex 		db					3	dup (0)
 
 	end_line	db 13, 10, 24h 
+
+	regSP		db "SP $"
+	regBP		db "BP $"
+	regSI2		db "SI $"
+	regDI2		db "DI $"
+
 
 	regSI		db "[SI] $"
 	regDI		db "[DI] $"
@@ -47,7 +53,7 @@
 	mode 		db 0
 	reg 		db 0
 	rm          db 0
-
+	check		db 0
 	index 		dw 0
 
 .code
@@ -101,6 +107,32 @@ proc pDx
 	int 21h	
 ret
 endp
+
+proc pSP
+ 	mov dx, offset regSP 
+	mov ah, 09h					 
+	int 21h 
+ret
+endp
+proc pBP
+	mov dx, offset regBP 
+	mov ah, 09h					
+	int 21h 
+ret
+endp
+proc pSI
+	mov dx, offset regSI2 
+	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
+	int 21h 
+ret
+endp
+proc pDI
+ 	mov dx, offset regDI2 
+	mov ah, 09h		
+	int 21h	
+ret
+endp
+
 ;-----------------
 proc pAh
  	mov dx, offset regAh 
@@ -161,32 +193,23 @@ ret
 endp
 
 ;----------------------------------------------------------
+proc pTest
+	mov dx, offset comTest 
+	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
+	int 21h 	
+
+
+ret
+endp
+
+
 proc printIdiv
  	mov dx, offset comIdiv 
 	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
 	int 21h 
 
-	cmp byte ptr [si + 1], 11111001b	;cmp with f9
-		je printCx
-		jl printAx
-	cmp byte ptr [si + 1], 11111010b
-		je printDx
-		jmp printBx
-
-printCx:
-	call pCX
-	jmp endl
-printAx:
-	call pAx
-	jmp endl
-printBx:
- 	call pBX
-	jmp endl
-printDx:
-	call pDX
-	
-endl:
-	call pEndl
+	call modRegRmX
+	call printRm 
 	ret
 endp
 proc printIn
@@ -225,12 +248,62 @@ proc printDiv
 	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
 	int 21h 
 		
-	cmp byte ptr [si + 1], 11110001b	;cmp with f1
-		je printCx
-		jl printAx
-	cmp byte ptr [si + 1], 11110010b	;cmp with f2
-		je printDx
-		jmp printBx
+	call modRegRmX
+	call printRm 
+
+ret
+endp
+
+
+proc printRm
+	cmp rm, 00000011b
+	je printBX
+	jl printACDX
+	jg printSBSD
+printACDX:
+	cmp rm, 00000001b
+	je printCX
+	jl printAX
+	jg printDX
+
+printSBSD:
+	cmp rm, 00000110b
+	je printSI
+	jl printSB
+	jg printDI 
+printSB:
+	cmp rm, 00000100b
+	je printSP
+	jg printBP
+
+printAX:
+	call pAX
+	jmp cont3
+printCX:
+	call pCX
+	jmp cont3
+printDX:
+	call pDX
+	jmp cont3
+printBX:
+	call pBX
+	jmp cont3
+;-----------
+printSP:
+	call pSP
+	jmp cont3
+printBP:
+	call pBP
+	jmp cont3
+printSI:
+	call pSI
+	jmp cont3
+printDI:
+	call pDI
+	jmp cont3
+
+cont3:
+
 ret
 endp
 ;-----------------------------------------------------------------
@@ -610,60 +683,96 @@ l1:
 	;je idivDivTest
 
 	cmp byte ptr [si], 11101101b
-	je pInAx
+	je JUMPERpInAx
 	cmp byte ptr [si], 11101100b
-	je pInAx
+	je JUMPERpInAx
 
 	cmp byte ptr [si], 11001111b		;cf is iret instruction
-	je pIret
+	je JUMPERpIret
 	cmp byte ptr [si], 11001101b 		;cd int
-	je pInt
+	je JUMPERpInt
 	cmp byte ptr [si], 11000100b		;c4 beginning of les instruction
-	je pLes 
-	jmp check
+	je JUMPERpLes 
+	jmp check1
+JUMPERpInAx:
+	jmp pInAx
+JUMPERpIret:
+	jmp pIret
 JUMP3readFromFile:
 	jmp readFromFile	
-check:
+check1:
 	cmp byte ptr [si], 10010000b
-	je xchgAx
+	je JUMPERxchgAx
 	cmp byte ptr [si], 10010001b
-	je xchgCx
+	je JUMPERxchgCx
 	cmp byte ptr [si], 10010010b
-	je xchgDx
+	je JUMPERxchgDx
 	cmp	 byte ptr [si], 10010011b
-	je xchgBx
+	je JUMPERxchgBx
 	;cmp	byte ptr [si], 10000111b
 	;je xchgReg
 	cmp	byte ptr [si], 10000110b
 	je xchgReg1
 	cmp byte ptr [si], 10000100b
-	je JUMPERtestReg
+	je JUMPER1testReg
 
 	jmp rand
+
+JUMPERpInt:
+	jmp pInt
+
 JUMP2readFromFile:
 	jmp JUMP3readFromFile
+
+
+JUMPERpLes:
+	jmp pLes
 ;-------------------------------------------------
 	jmp tesiam
 idivDivTest:
-	cmp byte ptr [si + 1], 11111000b	;f8
-	jge pIdiv
-	cmp  byte ptr [si + 1], 11110000b
-	jge pDiv							;in other case jump to test command!!!
-		pIdiv:
-			call printIdiv
-			add di, 2
-			add si, 2
-			jmp tesiam
-		pDiv:
-			call printDiv
-			add di, 2
-			add si, 2
+	push ax
+	mov al, byte ptr [si+1]
+	and al, 00111000b
+	shr al, 3
+	
+	cmp al, 00000110b
+	je printDivInstruction
+	jl printTestInstruction
+	jg printIdivInstruction
+	jmp rand
+
+
+JUMPERxchgAx:
+	jmp xchgAx
+JUMPERxchgCx:
+	jmp xchgCx
+printDivInstruction:
+	call printDiv
+	jmp dirbam
+printTestInstruction:
+	call pTest 
+	jmp dirbam
+printIdivInstruction:
+	call printIdiv
+	jmp dirbam
+
+dirbam:
+	call pEndl
+
+	add di, 2
+	add si, 2
+	pop ax
 	jmp tesiam
+
+
 pInAx:
 	call printIn
 	jmp tesiam
 xchgReg1:
 	jmp xchgReg
+
+JUMPERxchgBx:
+	jmp xchgBx
 pIret:
 	mov ah, 09h                
  	mov dx, offset comIret
@@ -677,6 +786,10 @@ pIret:
 
 	jmp tesiam
 
+JUMPER1testReg:
+	jmp JUMPERtestReg
+JUMPERxchgDx:
+	jmp xchgDx
 
 pInt:
 	call printInt
