@@ -18,21 +18,23 @@
 
 proc strcpy		; bx offset to string
 	push di
-
 	push si
+
 	xor di, di
 	xor si,si
+
 	mov di, index
 	ciklas:
-		add bx, si
-		cmp byte ptr [bx], '$'
+		cmp byte ptr [bx], 24h
 		je baigiam
 		mov di, [bx]
 		inc di
-		inc si
+		inc bx
+
 	jmp ciklas
 baigiam:
 	mov index, di
+	
 	pop di
 	pop si
 ret
