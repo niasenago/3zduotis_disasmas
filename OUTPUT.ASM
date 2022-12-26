@@ -7,8 +7,9 @@
 	outFilehandle   dw       	    0
 
     errMsg          db "Nepavyko atidaryti failo $"
- 	msg             db "3 all good!$"
+ 	msg             db "4 all good!$"
     create_of_error_msg db "Nepavyko sukurti output filo. $"
+	end_line	db 13, 10, 24h 
 
     hello           db "Labas, $"
     world           db "pasauli! $"
@@ -19,6 +20,7 @@
 proc strcpy		; bx offset to string
 	push di
 	push si
+	push ax
 
 	xor di, di
 	xor si,si
@@ -27,14 +29,16 @@ proc strcpy		; bx offset to string
 	ciklas:
 		cmp byte ptr [bx], 24h
 		je baigiam
-		mov di, [bx]
+		mov al, byte ptr [bx]
+		mov byte ptr [di], al
 		inc di
 		inc bx
 
 	jmp ciklas
 baigiam:
 	mov index, di
-	
+
+	pop ax
 	pop di
 	pop si
 ret
@@ -145,14 +149,17 @@ start:
 	call createOutFile
 
     mov index, offset outBuff
+
     mov bx, offset hello
     call strcpy
+	mov bx, offset end_line
+	call strcpy
     mov bx, offset world
     call strcpy
-    
+
 	mov ah, 40h         ; DOS 2+ - WRITE - WRITE TO FILE OR DEVICE
-    mov bx, 1           ; File handle = STDOUT
-	mov cx, 225
+    mov bx, outFilehandle           ; File handle = STDOUT
+	mov cx, 255
 	mov dx, offset outBuff
 	int 21h
 
