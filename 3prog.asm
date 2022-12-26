@@ -7,7 +7,7 @@
 	outFilehandle  dw       	    0
 
 	errMsg 	    db "Nepavyko atidaryti failo. $"
- 	msg         db "36 all good!$"
+ 	msg         db "37 all good!$"
 	smth		db "something $"
 
  	buff        db 255, ?, 			255 dup (?) 
@@ -737,8 +737,10 @@ idivDivTest:
 	
 	cmp al, 00000110b
 	je printDivInstruction
-	jl printTestInstruction
-	jg printIdivInstruction
+	cmp al, 00000000b
+	je printTestInstruction
+	cmp al, 00000111b
+	je printIdivInstruction
 	jmp rand
 
 
@@ -764,7 +766,8 @@ dirbam:
 	pop ax
 	jmp tesiam
 
-
+JUMPERxchgDx:
+	jmp xchgDx
 pInAx:
 	call printIn
 	jmp tesiam
@@ -788,8 +791,7 @@ pIret:
 
 JUMPER1testReg:
 	jmp JUMPERtestReg
-JUMPERxchgDx:
-	jmp xchgDx
+
 
 pInt:
 	call printInt
