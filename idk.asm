@@ -1,3 +1,8 @@
+; dalinis disasembleris, 4 variantas.
+;atpazysta komandas: idiv, div, in, iret, test, int, les, xchg 
+;Artiom Hovhannisyan
+
+
 .model small
 .stack 100h
 .data
@@ -7,7 +12,7 @@
 	outFilehandle  dw       	    0
 
 	errMsg 	    db "Nepavyko atidaryti failo. $"
- 	msg         db "41 all good!$"
+ 	msg         db "42 all good!$"
 	smth		db "something $"
 
  	buff        db 255, ?, 			255 dup (?) 
@@ -54,10 +59,84 @@
 	reg 		db 0
 	rm          db 0
 	check		db 0
+
 	index 		dw 0
+	instrPtr 	db 					6 dup(0)
+
 
 .code
+proc printInstructionPointer
+	push di
+	push ax
+	push bx
 
+	xor ax,ax
+	mov ax, di
+	mov bl, 10h
+	shr ax,8
+	div bl
+
+	 cmp al, 09h
+    jle maziau10_4
+
+    add al, 37h
+    jmp toliau_4
+maziau10_4:
+    add al, 30h
+	
+toliau_4: 
+    mov ds:[instrPtr], al 
+
+    cmp ah, 09h
+    jle maziauA_4
+
+    add ah, 37h
+    jmp toliau2_4
+maziauA_4:
+   add ah, 30h 
+toliau2_4:
+	mov ds:[instrPtr + 1], ah 
+;----------------------------------
+	mov ax, di
+	shl ax, 8
+	shr ax, 8
+
+	div bl
+
+	cmp al, 09h
+    jle maziau10_4_2
+
+    add al, 37h
+    jmp toliau_4_2
+maziau10_4_2:
+    add al, 30h
+	
+toliau_4_2: 
+    mov ds:[instrPtr+2], al 
+
+    cmp ah, 09h
+    jle maziauA_4_2
+
+    add ah, 37h
+    jmp toliau2_4_2
+maziauA_4_2:
+   add ah, 30h 
+toliau2_4_2:
+	mov ds:[instrPtr + 3], ah 
+
+	mov ds:[instrPtr + 4], ' '
+	mov ds:[instrPtr + 5], '$'
+
+	           
+ 	mov dx, offset instrPtr
+	mov ah, 09h     
+	int 21h	
+
+	pop bx
+	pop ax
+	pop di
+ret
+endp
 
 proc strcpy		; bx offset to string
 	push di
@@ -798,6 +877,7 @@ readFromFile:
 
 
 l1:
+	call printInstructionPointer
 										;idiv div and test instructions start from 1111 
 	cmp byte ptr [si], 11110111b		;f7 (comand with one word)
 	je idivDivTest
@@ -894,7 +974,7 @@ dirbam:
 JUMPERxchgDx:
 	jmp xchgDx
 pInAx:
-    call hexToAscii
+    call hexToAsciiSpecial
 	call printIn
 	jmp tesiam
 xchgReg1:
