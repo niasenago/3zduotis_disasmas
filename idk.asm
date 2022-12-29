@@ -12,11 +12,12 @@
 	outFilehandle  dw       	    0
 
 	errMsg 	    db "Nepavyko atidaryti failo. $"
- 	msg         db "42 all good!$"
+	create_of_error_msg db "Nepavyko sukurti output filo. $"
+ 	msg         db "43 all good!$"
 	smth		db "something $"
 
  	buff        db 255, ?, 			255 dup (?) 
-	outBuff     db 255, ?, 			255 dup (?) 
+    outBuff     db       	        255 dup(0)
    	hex 		db					3	dup (0)
     code        db                  4   dup (0)
 	end_line	db 13, 10, 24h 
@@ -76,7 +77,7 @@ proc printInstructionPointer
 	shr ax,8
 	div bl
 
-	 cmp al, 09h
+	cmp al, 09h
     jle maziau10_4
 
     add al, 37h
@@ -128,9 +129,8 @@ toliau2_4_2:
 	mov ds:[instrPtr + 5], '$'
 
 	           
- 	mov dx, offset instrPtr
-	mov ah, 09h     
-	int 21h	
+ 	mov bx, offset instrPtr
+	call strcpy
 
 	pop bx
 	pop ax
@@ -140,22 +140,26 @@ endp
 
 proc strcpy		; bx offset to string
 	push di
-
 	push si
+	push ax
+
 	xor di, di
 	xor si,si
+
 	mov di, index
-	mov al, '$'
 	ciklas:
-		add bx, si
-		cmp byte ptr [bx], '$'
+		cmp byte ptr [bx], 24h
 		je baigiam
-		mov di, [bx + si]
+		mov al, byte ptr [bx]
+		mov byte ptr [di], al
 		inc di
-		inc si
+		inc bx
+
 	jmp ciklas
 baigiam:
 	mov index, di
+
+	pop ax
 	pop di
 	pop si
 ret
@@ -195,9 +199,9 @@ toliau2_3:
     mov ds:[code + 2], ' '
     mov ds:[code + 3], '$'
 
-    mov ah, 09h                
- 	mov dx, offset code
-	int 21h	
+              
+ 	mov bx, offset code
+	call strcpy
 
     pop ax
     pop bx
@@ -240,9 +244,9 @@ toliau2:
     mov ds:[code + 2], ' '
     mov ds:[code + 3], '$'
 
-    mov ah, 09h                
- 	mov dx, offset code
-	int 21h	
+                   
+ 	mov bx, offset code
+	call strcpy
 ;--------------------------------
 	xor ax,ax
 	mov al, [si + 1]
@@ -274,9 +278,9 @@ toliau2_2:
     mov ds:[code + 2], ' '
     mov ds:[code + 3], '$'
 
-    mov ah, 09h                
- 	mov dx, offset code
-	int 21h	
+               
+ 	mov bx, offset code
+	call strcpy
 
     pop ax
     pop bx
@@ -285,119 +289,102 @@ endp
 
 
 proc pAx
- 	mov dx, offset regAX 
-	mov ah, 09h					 
-	int 21h 
+ 	mov bx, offset regAX 
+	call strcpy
 ret
 endp
 proc pBx
-	mov dx, offset regBX 
-	mov ah, 09h					
-	int 21h 
+	mov bx, offset regBX 
+	call strcpy 
 ret
 endp
 proc pCx
-	mov dx, offset regCX 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset regCX 
+	call strcpy
 ret
 endp
 proc pDx
- 	mov dx, offset regDX 
-	mov ah, 09h		
-	int 21h	
+ 	mov bx, offset regDX 
+	call strcpy
 ret
 endp
 
 proc pSP
- 	mov dx, offset regSP 
-	mov ah, 09h					 
-	int 21h 
+ 	mov bx, offset regSP 
+	call strcpy
 ret
 endp
 proc pBP
-	mov dx, offset regBP 
-	mov ah, 09h					
-	int 21h 
+	mov bx, offset regBP 
+	call strcpy
 ret
 endp
 proc pSI
-	mov dx, offset regSI2 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset regSI2 
+	call strcpy 
 ret
 endp
 proc pDI
- 	mov dx, offset regDI2 
-	mov ah, 09h		
-	int 21h	
+ 	mov bx, offset regDI2 
+	call strcpy
 ret
 endp
 
 ;-----------------
 proc pAh
- 	mov dx, offset regAh 
-	mov ah, 09h					 
-	int 21h 
+ 	mov bx, offset regAh 
+	call strcpy
 ret
 endp
 proc pBh
-	mov dx, offset regBh 
-	mov ah, 09h					
-	int 21h 
+	mov bx, offset regBh 
+	call strcpy
 ret
 endp
 proc pCh
-	mov dx, offset regCh 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset regCh 
+	call strcpy
 ret
 endp
 proc pDh
- 	mov dx, offset regDh 
-	mov ah, 09h		
-	int 21h	
+ 	mov bx, offset regDh 
+	call strcpy
 ret
 endp
 ;-----------------
 proc pAl
- 	mov dx, offset regAl 
-	mov ah, 09h					 
-	int 21h 
+ 	mov bx, offset regAl 
+	call strcpy
 ret
 endp
 proc pBl
-	mov dx, offset regBl 
-	mov ah, 09h					
-	int 21h 
+	mov bx, offset regBl 
+	call strcpy 
 ret
 endp
 proc pCl
-	mov dx, offset regCl
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset regCl
+	call strcpy
 ret
 endp
 proc pDl
- 	mov dx, offset regDl 
-	mov ah, 09h		
-	int 21h	
+ 	mov bx, offset regDl 
+	call strcpy	
 ret
 endp
 ;-------------------------------
 
 proc pEndl
-	mov ah, 09h                
- 	mov dx, offset end_line 
-	int 21h
+             
+ 	mov bx, offset end_line 
+	call strcpy
 ret
 endp
 
 ;----------------------------------------------------------
 proc pTest
-	mov dx, offset comTest 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 	
+	mov bx, offset comTest 
+	call strcpy 	
 
 
 ret
@@ -405,38 +392,33 @@ endp
 
 
 proc printIdiv
- 	mov dx, offset comIdiv 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+ 	mov bx, offset comIdiv 
+	call strcpy
 
 	call modRegRmX
 	call printRm 
 	ret
 endp
 proc printIn
- 	mov dx, offset comIn 		;In
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 	
+ 	mov bx, offset comIn 		;In
+	call strcpy
 
 	cmp byte ptr [si], 11101100b
 		je prAl
 
-	mov dx, offset regAX 		;AX
-	mov ah, 09h					 
-	int 21h 
+	mov bx, offset regAX 		;AX
+	call strcpy
 	jmp vaziuojam
 prAl:
-	mov dx, offset regAL		;Al
-	mov ah, 09h					 
-	int 21h 
+	mov bx, offset regAL		;Al
+	call strcpy 
 vaziuojam:
-	mov dx, offset regDX 		;DX
-	mov ah, 09h		
-	int 21h		
+	mov bx, offset regDX 		;DX
+	call strcpy	
 
-	mov ah, 09h                
- 	mov dx, offset end_line 
-	int 21h
+	             
+ 	mov bx, offset end_line 
+	call strcpy
 
 	add di, 1
 	add si, 1
@@ -445,9 +427,8 @@ ret
 endp
 ;------------------------------------------------------------
 proc printDiv
- 	mov dx, offset comDiv 
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+ 	mov bx, offset comDiv 
+	call strcpy
 		
 	call modRegRmX
 	call printRm 
@@ -509,9 +490,9 @@ ret
 endp
 ;-----------------------------------------------------------------
 proc printInt
- 	mov dx, offset comInt 		;In
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+ 	mov bx, offset comInt 		;In
+	call strcpy
+
 	push cx
 	mov ds:[hex + 2], 'h'
 	xor ax,ax
@@ -529,17 +510,16 @@ lessThan10:
 	div bl
 	add ah, 30h
 	mov ds:[hex + 1], ah
+	mov ds:[hex + 2], '$'
 
 	;print number of interrupt
-	mov ah, 40h         ; DOS 2+ - WRITE - WRITE TO FILE OR DEVICE
-    mov bx, 1           ; File handle = STDOUT
-	mov cx, 3
-	mov dx, offset hex
-	int 21h
+	
+	mov bx, offset hex
+	call strcpy
 
-	mov ah, 09h                
- 	mov dx, offset end_line 
-	int 21h
+	              
+ 	mov bx, offset end_line 
+	call strcpy
 
 	mov ds:[hex], 0
 	mov ds:[hex + 1], 0
@@ -554,9 +534,8 @@ ret
 endp
 ;--------------------------------------------
 proc printLes
- 	mov dx, offset comLes 		;In
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+ 	mov bx, offset comLes 		;In
+	call strcpy
 
 	cmp	byte ptr [si+1], 00000100b
 	je prAxSi
@@ -570,33 +549,33 @@ proc printLes
 	jmp exit
 prAxSi:
 	call pAx
-	mov ah, 09h                
- 	mov dx, offset regSI
-	int 21h
+	               
+ 	mov bx, offset regSI
+	call strcpy
 	jmp exit
 prAxDi:
 	call pAx
-	mov ah, 09h                
- 	mov dx, offset regDI
-	int 21h
+	              
+ 	mov bx, offset regDI
+	call strcpy
 	jmp exit
 prBxSi:
 	call pBx
-	mov ah, 09h                
- 	mov dx, offset regSI
-	int 21h
+	               
+ 	mov bx, offset regSI
+	call strcpy
 	jmp exit
 prBxDi:
 	call pBx
-	mov ah, 09h                
- 	mov dx, offset regDI
-	int 21h	
+	                 
+ 	mov bx, offset regDI
+	call strcpy	
 	jmp exit
 exit:
 
-	mov ah, 09h                
- 	mov dx, offset end_line 
-	int 21h
+	              
+ 	mov bx, offset end_line 
+	call strcpy
 	add di, 2		
 	add si, 2
 ret
@@ -604,33 +583,33 @@ endp
 
 ;---------------------------------------------
 proc pExchgAx
-	mov dx, offset comXchg
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset comXchg
+	call strcpy
+
 	call pAx
 	call pAx
 ret
 endp
 proc pExchgBx
-	mov dx, offset comXchg
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset comXchg
+	call strcpy
+
 	call pBX
 	call pAx
 ret
 endp
 proc pExchgCx
-	mov dx, offset comXchg
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset comXchg
+	call strcpy
+
 	call pCX
 	call pAx
 ret
 endp
 proc pExchgDx
-	mov dx, offset comXchg
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h 
+	mov bx, offset comXchg
+	call strcpy
+
 	call pDX
 	call pAx
 
@@ -656,9 +635,8 @@ ret
 endp
 ;-------------------------------------------------
 proc pXchg
-	mov dx, offset comXchg
-	mov ah, 09h					 ;; print interrupt; end of line is $ chars 
-	int 21h
+	mov bx, offset comXchg
+	call strcpy
 
 	call modRegRmX
 	call printRegRm
@@ -787,9 +765,9 @@ ret
 endp
 
 proc printTestReg
-	mov ah, 09h                
- 	mov dx, offset comTest
-	int 21h	
+	              
+ 	mov bx, offset comTest
+	call strcpy	
 	call modRegRmX
 	call printRegRm
 	
@@ -797,44 +775,70 @@ ret
 endp
 
 ;--------------------------------------------------
-proc inlineArg
-    xor cx,cx
-    mov cl,es:[80h] ;amount of inline inputed chars
+proc inlineArg    
+    xor ch, ch
+    mov cl, es:[80h]
 
-    mov si,0082h ;0082h beginning of argv
-    xor bx,bx
-    xor di,di
-copy1:
+    dec cl
+    mov si, 82h
 
-    mov al,es:[si + bx]             ;bx is counter for the buffer and input name
-    cmp al, 32
+    ; ieskomas input failo pavadinimas
+read_ifn:
+    mov di, offset filename
 
-    je secondName
+    read_ifn_loop:
+        mov dl, es:[si]
 
-    mov ds:[filename + bx], al ;copy filename from es to variable
-    inc bx
-    loop copy1
-    jmp continue
+        cmp dl, " "
+        je end_read_ifn
 
-secondName:
-    cmp al, 32
-    je skip
-    mov ds:[outputFilename + di], al ;copy outputFilname
+        mov ds:[di], dl
 
-    inc di                          ;di counter for output name
-skip:
-    inc bx                          ;bx counter for buffer
-    mov al,es:[si + bx]
-    loop secondName 
+        inc si
+        inc di
+    loop read_ifn_loop
+
+end_read_ifn:
+    cmp cl, 0
+    je skip_read_ofn
+    inc si
+
+    ; ieskomas output failo pavadinimas
+read_ofn:
+    mov di, offset outputFilename
+    read_ofn_loop:
+        mov dl, es:[si]
+
+        cmp dl, 0
+        je skip_read_ofn
+
+        cmp dl, 0Dh
+        je skip_read_ofn
+
+        mov [di], dl
+        inc si
+        inc di
+    loop read_ofn_loop
+
+skip_read_ofn:
 
 ret
 endp
 proc createOutFile
 	mov ax, 3c00h
 	xor cx,cx
-	lea dx, outputFilename
+	mov dx, offset outputFilename
 	int 21h
+    jc create_of_error
 	mov outFilehandle, ax
+    ret
+
+create_of_error:
+    mov dx, offset create_of_error_msg
+    mov ah, 09h                
+	int 21h 
+    mov ax, 4C00h
+    int 21h
 ret
 endp
 
@@ -847,6 +851,7 @@ start:
 	call inlineArg
 	call openInFile
 	call createOutFile
+
 	mov index, offset outBuff
 ;read data from file  
 readFromFile:
@@ -1058,9 +1063,9 @@ rand:				;if occures unknow instruction
 	inc di
 	inc si
     call hexToAscii
-	mov ah, 09h                
- 	mov dx, offset smth
-	int 21h 	
+	            
+ 	mov bx, offset smth
+	call strcpy	
 	call pEndl
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 tesiam:
@@ -1070,17 +1075,24 @@ tesiam:
 	jmp l1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+closeProgram:
 ; print out buff to file
-	mov ax, 4000h
-	mov bx, offset outFilehandle
+	mov ah, 40h         ; DOS 2+ - WRITE - WRITE TO FILE OR DEVICE
+    mov bx, outFilehandle           ; File handle = STDOUT
+	mov cx, 255
 	mov dx, offset outBuff
-	;cx jau ir taip yra baitu kiekis
 	int 21h
 
 	cmp cx, 0		;if buffer overflow
-	je JUMPER1readFromFile
+	jne JUMPER1readFromFile
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-closeProgram:
+
+
+	mov ah, 40h         ; DOS 2+ - WRITE - WRITE TO FILE OR DEVICE
+    mov bx, outFilehandle           ; File handle = STDOUT
+	mov cx, 255
+	mov dx, offset outBuff
+	int 21h
 
 	mov ah, 09h                
  	mov dx, offset msg 
